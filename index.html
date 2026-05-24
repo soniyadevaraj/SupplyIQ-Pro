@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SupplyIQ Pro — Enhanced Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- SKU MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo-wrap" onclick="navigate('overview')">
+    <div class="logo-icon">📦</div>
+    <div>
+      <div class="logo-txt">Supply<span>IQ</span> Pro</div>
+      <div style="font-size:9.5px;color:var(--text3)">FMCG Intelligence v2</div>
+    </div>
+  </div>
+
+  <div class="nav-sec">Main</div>
+  <button class="nav-item active" id="nav-overview" onclick="navigate('overview')"><span class="ni">🏠</span>Overview<span class="nbadge nb-r" id="nb-crit">0</span></button>
+  <button class="nav-item" id="nav-inventory" onclick="navigate('inventory')"><span class="ni">📦</span>Inventory</button>
+  <button class="nav-item" id="nav-stockout" onclick="navigate('stockout')"><span class="ni">⚠️</span>Stockout Risk<span class="nbadge nb-o" id="nb-risk">0</span></button>
+  <button class="nav-item" id="nav-suppliers" onclick="navigate('suppliers')"><span class="ni">🚚</span>Suppliers</button>
+  <button class="nav-item" id="nav-abc" onclick="navigate('abc')"><span class="ni">🎯</span>ABC Analysis</button>
+  <button class="nav-item" id="nav-forecast" onclick="navigate('forecast')"><span class="ni">📈</span>Demand Forecast</button>
+  <button class="nav-item" id="nav-restock" onclick="navigate('restock')"><span class="ni">📋</span>Restock Planner</button>
+
+  <div class="nav-sec">AI</div>
+  <button class="nav-item" id="nav-ai" onclick="navigate('ai')"><span class="ni">🤖</span>AI Analyst<span class="nbadge nb-g">Live</span></button>
+
+  <div class="sidebar-foot">
+    <div class="tgl-wrap" onclick="toggleNotifications()">
+      <span>Live alerts</span>
+      <div class="tgl on" id="notif-tgl"><div class="tgl-knob"></div></div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="page-title-wrap">
+      <div class="pt" id="page-title">Overview</div>
+      <div class="ps" id="page-sub">Supply chain health at a glance</div>
+    </div>
+    <div class="topbar-r">
+      <div class="live-dot"><div class="pulse"></div>Live</div>
+      <select class="fsel" id="catFilter" onchange="applyFilter()">
+        <option value="all">All categories</option>
+        <option value="beverages">Beverages</option>
+        <option value="dairy">Dairy</option>
+        <option value="snacks">Snacks</option>
+        <option value="personal">Personal care</option>
+        <option value="household">Household</option>
+      </select>
+      <select class="fsel" id="timeRange" onchange="renderAll()">
+        <option value="4">4-week</option>
+        <option value="8">8-week</option>
+        <option value="12" selected>12-week</option>
+      </select>
+      <span style="font-size:10.5px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="last-upd">Just now</span>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="page active fade-in" id="page-overview">
+    <div class="kpi-row">
+      <div class="kpi kpi-b" onclick="navigate('inventory')">
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-lbl">Total SKUs</div>
+        <div class="kpi-val" id="k-skus">40</div>
+        <div class="kpi-sub" id="k-skus-sub">5 categories</div>
+      </div>
+      <div class="kpi kpi-g" onclick="navigate('inventory')">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-lbl">Inventory Value</div>
+        <div class="kpi-val" id="k-val">--</div>
+        <div class="kpi-sub">Total stock</div>
+      </div>
+      <div class="kpi kpi-o" onclick="navigate('forecast')">
+        <div class="kpi-icon">📅</div>
+        <div class="kpi-lbl">Avg Days of Stock</div>
+        <div class="kpi-val" id="k-dos">--</div>
+        <div class="kpi-sub">Target: 21 days</div>
+      </div>
+      <div class="kpi kpi-r" onclick="navigate('stockout')">
+        <div class="kpi-icon">⚠️</div>
+        <div class="kpi-lbl">Stockout Risk</div>
+        <div class="kpi-val" id="k-risk">--</div>
+        <div class="kpi-sub" id="k-risk-sub">SKUs critical</div>
+      </div>
+      <div class="kpi kpi-p" onclick="navigate('suppliers')">
+        <div class="kpi-icon">🎯</div>
+        <div class="kpi-lbl">Fill Rate</div>
+        <div class="kpi-val" id="k-fill">--</div>
+        <div class="kpi-sub">Service level</div>
+      </div>
+    </div>
+
+    <div class="ic-grid" id="insight-chips"></div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><span class="chi chi-b">📊</span>Stock by category</div>
+          <span class="cbadge cb-b">Units</span>
+        </div>
+        <div style="position:relative;height:190px"><canvas id="c-catbar" role="img" aria-label="Bar chart showing stock units by category"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><span class="chi chi-o">⚠️</span>Risk score radar</div>
+          <span class="cbadge cb-o">Radar</span>
+        </div>
+        <div style="position:relative;height:190px"><canvas id="c-radar" role="img" aria-label="Radar chart of risk scores by category"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><span class="chi chi-g">📈</span>12-week stock vs demand</div>
+          <span class="cbadge cb-g">Trend</span>
+        </div>
+        <div style="position:relative;height:190px"><canvas id="c-trend" role="img" aria-label="Line chart of stock vs demand over 12 weeks"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-l"><span class="chi chi-p">💽</span>Days of stock distribution</div>
+        </div>
+        <div style="position:relative;height:190px"><canvas id="c-dos-hist" role="img" aria-label="Histogram of days of stock distribution"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-hd-l"><span class="chi chi-r">🔥</span>Stockout heatmap — category × week</div>
+        <div style="display:flex;gap:8px;font-size:10px;color:var(--text3)">
+          <span style="color:var(--green)">■ Low</span>
+          <span style="color:var(--blue)">■ Med</span>
+          <span style="color:var(--orange)">■ High</span>
+          <span style="color:var(--red)">■ Critical</span>
+        </div>
+      </div>
+      <div style="margin-bottom:5px;display:flex;align-items:center;gap:5px;padding-left:77px">
+        <div style="display:flex;gap:5px;flex:1">
+          <span style="flex:1;text-align:center;font-size:9.5px;color:var(--text3)">W1</span>
+          <span style="flex:1;text-align:center;font-size:9.5px;color:var(--text3)">W2</span>
+          <span style="flex:1;text-align:center;font-size:9.5px;color:var(--text3)">W3</span>
+          <span style="flex:1;text-align:center;font-size:9.5px;color:var(--text3)">W4</span>
+          <span style="flex:1;text-align:center;font-size:9.5px;color:var(--text3)">W5</span>
+          <span style="flex:1;text-align:center;font-size:9.5px;color:var(--text3)">W6</span>
+          <span style="flex:1;text-align:center;font-size:9.5px;color:var(--text3)">W7</span>
+        </div>
+      </div>
+      <div id="heat-grid"></div>
+    </div>
+  </div>
+
+  <!-- INVENTORY -->
+  <div class="page fade-in" id="page-inventory">
+    <div class="pg-hd">
+      <div class="pg-icon chi-b" style="background:var(--blue-d)">📦</div>
+      <div><div class="pg-title">Inventory roster</div><div class="pg-sub">All 40 SKUs with live stock levels — click any row for details</div></div>
+      <div style="margin-left:auto;display:flex;gap:7px">
+        <select class="fsel" id="tbl-sort" onchange="renderTable()">
+          <option value="risk">Sort: risk</option>
+          <option value="dos">Sort: days of stock</option>
+          <option value="val">Sort: value</option>
+          <option value="name">Sort: name</option>
+        </select>
+        <button class="btn" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-inp" placeholder="Search SKU, product name, category, supplier…" oninput="renderTable()">
+    </div>
+    <div class="g3" style="margin-bottom:12px">
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-g">💰</span>Value split</div></div>
+        <div style="position:relative;height:150px"><canvas id="c-val-pie" role="img" aria-label="Pie chart showing inventory value by category"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-b">📊</span>Fill rate by category</div></div>
+        <div class="prog-list" id="fill-progs"></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-o">🔄</span>Overstock vs understock</div></div>
+        <div style="position:relative;height:150px"><canvas id="c-overunder" role="img" aria-label="Bar chart comparing overstock and understock by category"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="overflow-x:auto">
+        <table class="rtable" id="inv-table">
+          <thead><tr>
+            <th>SKU</th><th>Product</th><th>Category</th><th>ABC</th>
+            <th>Stock</th><th>Reorder Pt</th><th>Days of Stock</th>
+            <th>Lead Time</th><th>Value</th><th>Risk Score</th><th>Status</th>
+          </tr></thead>
+          <tbody id="inv-tbody"></tbody>
+        </table>
+      </div>
+      <div style="font-size:10.5px;color:var(--text3);margin-top:8px;text-align:right" id="table-count"></div>
+    </div>
+  </div>
+
+  <!-- STOCKOUT -->
+  <div class="page fade-in" id="page-stockout">
+    <div class="pg-hd">
+      <div class="pg-icon" style="background:var(--red-d);color:var(--red)">⚠️</div>
+      <div><div class="pg-title">Stockout risk dashboard</div><div class="pg-sub">AI-scored risk prediction — click any item for drill-down</div></div>
+      <button class="btn btn-primary" onclick="aiPredictAll()">✨ Run AI prediction</button>
+    </div>
+    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi kpi-r"><div class="kpi-lbl">Critical (&lt;7 days)</div><div class="kpi-val" id="so-crit">--</div><div class="kpi-sub">Immediate action</div></div>
+      <div class="kpi kpi-o"><div class="kpi-lbl">High risk (7–14 days)</div><div class="kpi-val" id="so-high">--</div><div class="kpi-sub">Order this week</div></div>
+      <div class="kpi kpi-g"><div class="kpi-lbl">Safe (&gt;14 days)</div><div class="kpi-val" id="so-safe">--</div><div class="kpi-sub">No action needed</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-r">⚠️</span>Top 10 highest risk SKUs</div></div>
+        <div id="risk-items"></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-o">📊</span>Risk distribution</div></div>
+        <div style="position:relative;height:200px"><canvas id="c-risk-dist" role="img" aria-label="Bar chart showing distribution of risk scores"></canvas></div>
+      </div>
+    </div>
+    <div class="card" id="predict-card" style="display:none">
+      <div class="card-hd"><div class="card-hd-l"><span class="chi chi-r">🤖</span>AI prediction report</div></div>
+      <div id="predict-output" style="font-size:12.5px;color:var(--text2);line-height:1.8"></div>
+    </div>
+  </div>
+
+  <!-- SUPPLIERS -->
+  <div class="page fade-in" id="page-suppliers">
+    <div class="pg-hd">
+      <div class="pg-icon" style="background:rgba(45,212,191,0.1);color:var(--teal)">🚚</div>
+      <div><div class="pg-title">Supplier performance</div><div class="pg-sub">Lead times, reliability scores and SKU coverage</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-b">📊</span>Avg lead time (days)</div></div>
+        <div style="position:relative;height:210px"><canvas id="c-sup-bar" role="img" aria-label="Horizontal bar chart of average lead time by supplier"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-g">🎯</span>Reliability scores</div></div>
+        <div class="prog-list" id="sup-prog"></div>
+      </div>
+    </div>
+    <div id="sup-cards"></div>
+  </div>
+
+  <!-- ABC -->
+  <div class="page fade-in" id="page-abc">
+    <div class="pg-hd">
+      <div class="pg-icon" style="background:var(--green-d);color:var(--green)">🎯</div>
+      <div><div class="pg-title">ABC analysis</div><div class="pg-sub">Inventory classification by value contribution</div></div>
+    </div>
+    <div class="abc-grid" id="abc-summary"></div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-g">📊</span>Value by class</div></div>
+        <div style="position:relative;height:200px"><canvas id="c-abc-bar" role="img" aria-label="Bar chart showing inventory value and SKU count by ABC class"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-b">⚪</span>Value vs daily demand</div></div>
+        <div style="position:relative;height:200px"><canvas id="c-abc-scatter" role="img" aria-label="Bubble chart of SKU value versus daily demand"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-hd-l"><span class="chi chi-p">📋</span>ABC classified SKUs (top 15 by value)</div></div>
+      <div style="overflow-x:auto"><table class="rtable"><thead><tr><th>SKU</th><th>Product</th><th>Class</th><th>Value</th><th>% of Total</th><th>Daily demand</th><th>Status</th></tr></thead><tbody id="abc-tbody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- FORECAST -->
+  <div class="page fade-in" id="page-forecast">
+    <div class="pg-hd">
+      <div class="pg-icon" style="background:var(--orange-d);color:var(--orange)">📈</div>
+      <div><div class="pg-title">Demand forecast</div><div class="pg-sub">12-week historical trend + 4-week AI projection</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-o">📈</span>Total demand trend</div></div>
+        <div style="position:relative;height:210px"><canvas id="c-fc-main" role="img" aria-label="Line chart of total demand trend and AI forecast"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-l"><span class="chi chi-b">📊</span>Demand by category (stacked)</div></div>
+        <div style="position:relative;height:210px"><canvas id="c-fc-stack" role="img" aria-label="Stacked bar chart of demand by category"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-hd-l"><span class="chi chi-g">📋</span>4-week forecast per SKU (top demand)</div></div>
+      <div id="forecast-rows"></div>
+    </div>
+  </div>
+
+  <!-- RESTOCK -->
+  <div class="page fade-in" id="page-restock">
+    <div class="pg-hd">
+      <div class="pg-icon" style="background:var(--purple-d);color:var(--purple)">📋</div>
+      <div><div class="pg-title">Restock planner</div><div class="pg-sub">Prioritized reorder recommendations</div></div>
+      <button class="btn btn-primary" onclick="aiRestockPlan()">🤖 AI restock plan</button>
+    </div>
+    <div class="card" id="ai-restock-card" style="display:none;margin-bottom:12px">
+      <div class="card-hd"><div class="card-hd-l"><span class="chi chi-p">🤖</span>AI restock plan</div></div>
+      <div id="ai-restock-text" style="font-size:12.5px;color:var(--text2);line-height:1.8"></div>
+    </div>
+    <div id="restock-items"></div>
+  </div>
+
+  <!-- AI -->
+  <div class="page fade-in" id="page-ai">
+    <div class="pg-hd">
+      <div class="pg-icon" style="background:var(--blue-d);color:var(--blue)">🤖</div>
+      <div><div class="pg-title">AI supply chain analyst</div><div class="pg-sub">Natural language Q&amp;A powered by Claude</div></div>
+    </div>
+    <div class="ai-panel">
+      <div class="ai-hd">
+        <div class="ai-ava">🤖</div>
+        <div>
+          <div class="ai-name">SupplyIQ AI Agent</div>
+          <div class="ai-sub">Stockout prediction · Restock recommendations · Chat with your data</div>
+        </div>
+        <span class="ai-status as-setup" id="ai-status-badge">Setup required</span>
+      </div>
+      <div class="setup-box" id="setup-box">
+        <strong style="color:var(--orange)">One-time setup:</strong> Paste your Anthropic API key to activate all AI features.<br>
+        Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys.<br>
+        <input class="key-inp" id="keyInp" type="password" placeholder="sk-ant-api03-…">
+        <button class="key-btn" onclick="activateKey()">✓ Activate AI Agent</button>
+      </div>
+      <div class="ai-tabs">
+        <button class="ai-tab active" id="tab-chat" onclick="switchTab('chat')">💬 Chat with data</button>
+        <button class="ai-tab" id="tab-predict" onclick="switchTab('predict')">⚠️ Stockout predict</button>
+        <button class="ai-tab" id="tab-restock-ai" onclick="switchTab('restock-ai')">📋 Restock AI</button>
+      </div>
+      <div id="pane-chat">
+        <div class="qrow">
+          <div class="qbtn" onclick="askAgent('Which SKUs are at highest risk of stocking out this week and what should we do?')">Stockout risk this week</div>
+          <div class="qbtn" onclick="askAgent('Which product categories are underperforming in fill rate and why?')">Fill rate issues</div>
+          <div class="qbtn" onclick="askAgent('Give me a top 3 action plan to reduce stockouts by next month')">Action plan</div>
+          <div class="qbtn" onclick="askAgent('Which supplier has the worst lead time and what is the impact on our business?')">Supplier analysis</div>
+          <div class="qbtn" onclick="askAgent('How should we reallocate inventory budget between categories based on ABC analysis?')">Budget reallocation</div>
+          <div class="qbtn" onclick="askAgent('What will happen to our fill rate if we do nothing about the current critical SKUs?')">Fill rate forecast</div>
+        </div>
+        <div class="chat-box" id="chat-msgs">
+          <div class="msg msg-ai"><strong style="color:var(--blue)">AI Agent</strong><br>Hello! I have full visibility into your FMCG supply chain — 40 SKUs across 5 categories with live stock levels, supplier lead times, and ABC classifications. Add your Anthropic API key above to unlock AI-powered analysis.</div>
+        </div>
+        <div class="inp-row">
+          <input class="ai-inp" id="ai-inp" type="text" placeholder="Ask about stockouts, suppliers, demand forecasts, reorder points…" onkeydown="if(event.key==='Enter')sendMsg()">
+          <button class="send-btn" onclick="sendMsg()">Send ↗</button>
+        </div>
+      </div>
+      <div id="pane-predict" style="display:none">
+        <div style="display:flex;gap:7px;margin-bottom:10px">
+          <button class="btn btn-primary" onclick="aiPredictAll()">✨ Run full stockout prediction</button>
+        </div>
+        <div id="ai-predict-out" style="font-size:12.5px;color:var(--text2);line-height:1.8"></div>
+      </div>
+      <div id="pane-restock-ai" style="display:none">
+        <div style="display:flex;gap:7px;margin-bottom:10px">
+          <button class="btn btn-primary" onclick="aiRestockPlan()">📋 Generate AI restock plan</button>
+        </div>
+        <div id="ai-restock-out" style="font-size:12.5px;color:var(--text2);line-height:1.8"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+<div class="footer">SupplyIQ Pro v2 · Enhanced Interactive Dashboard · Python · SQL · Scikit-learn · Claude AI · FMCG Supply Chain Intelligence</div>
+
+<script src="app.js"></script>
+</body>
+</html>
