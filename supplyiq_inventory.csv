@@ -1,0 +1,7 @@
+"SKU","Product","Category","ABC","Stock","Reorder Pt","Days of Stock","Lead Time","Value","Risk Score","Status","Supplier"
+"SKU-1008","Amul Milk 1L","dairy","A","10","310","0","14","1K","95%","Critical","Britannia Ind"
+"SKU-1009","Britannia Butter 500g","dairy","A","10","470","0","7","3K","95%","Critical","Britannia Ind"
+"SKU-1010","Mother Dairy Curd 400g","dairy","A","10","420","0","9","3K","95%","Critical","Nestle India"
+"SKU-1011","Nestle Yogurt 200g","dairy","A","10","174","0","6","4K","95%","Critical","Amul Dairy"
+"SKU-1012","Amul Cheese 400g","dairy","A","10","833","0","8","4K","95%","Critical","PepsiCo India"
+"SKU-1013","Nandini Paneer 200g","dairy","C","10","320","0","9","1K","95%","Critical","Nestle India"
